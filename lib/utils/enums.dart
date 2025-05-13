@@ -1,1 +1,1 @@
-enum ScanStatus { inital, loading, success, error }
+enum ScanStatus { inital, loading, success, connected, disConnected, error }

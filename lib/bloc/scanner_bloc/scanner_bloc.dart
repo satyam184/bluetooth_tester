@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:nrf/service/bluetooth_helper.dart';
 import 'package:nrf/utils/enums.dart';
 
 part 'scanner_event.dart';
@@ -10,13 +11,35 @@ part 'scanner_state.dart';
 
 class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
   StreamSubscription? _scanSubscription;
+  late StreamSubscription<BluetoothConnectionState> _deviceStateSubscription;
   final List<ScanResult> devicesList = [];
 
   ScannerBloc() : super(ScannerState()) {
     on<StartScan>(_onStartScan);
+    on<ConnectToDevice>(_onConnectToDevice);
+    on<BluetoothStateChanged>(_bluetoothStateChanged);
+  }
+
+  void _bluetoothStateChanged(
+    BluetoothStateChanged event,
+    Emitter<ScannerState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        connectedDevice: null,
+        scanStatus: ScanStatus.disConnected,
+      ),
+    );
+    print('device disconnected');
   }
 
   Future<void> _onStartScan(StartScan event, Emitter<ScannerState> emit) async {
+    final hasPermission = await checkBluetoothPermissions();
+    if (!hasPermission) {
+      emit(state.copyWith(scanStatus: ScanStatus.error));
+      return;
+    }
+
     try {
       emit(state.copyWith(scanStatus: ScanStatus.loading));
       devicesList.clear();
@@ -48,6 +71,8 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
 
       await Future.delayed(Duration(seconds: 5));
       FlutterBluePlus.stopScan();
+      _scanSubscription?.cancel();
+      _scanSubscription = null;
       if (!emit.isDone) {
         emit(
           state.copyWith(
@@ -56,8 +81,57 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
           ),
         );
       }
+      print('devices: $devicesList');
     } catch (e) {
       emit(state.copyWith(scanStatus: ScanStatus.error));
     }
+  }
+
+  Future<void> _onConnectToDevice(
+    ConnectToDevice event,
+    Emitter<ScannerState> emit,
+  ) async {
+    try {
+      await FlutterBluePlus.stopScan();
+      emit(state.copyWith(scanStatus: ScanStatus.loading));
+      if (state.connectedDevice != null && state.connectedDevice!.isConnected) {
+        try {
+          await state.connectedDevice!.disconnect();
+          print('Disconnected from previous device');
+        } catch (e) {
+          print('Error disconnecting previous device: $e');
+        }
+      }
+      if (!event.device.isConnected) {
+        await event.device.connect(timeout: Duration(seconds: 10));
+      }
+      bool isConnected = event.device.isConnected;
+      if (isConnected) {
+        emit(
+          state.copyWith(
+            connectedDevice: event.device,
+            scanStatus: ScanStatus.connected,
+          ),
+        );
+        _deviceStateSubscription = event.device.connectionState.listen((
+          connectionState,
+        ) {
+          if (connectionState != BluetoothConnectionState.connected) {
+            add(BluetoothStateChanged(event.device));
+          }
+        });
+        print('Connected device: ${event.device}');
+      }
+    } catch (e) {
+      emit(state.copyWith(scanStatus: ScanStatus.error));
+      print('Connection error: $e');
+    }
+  }
+
+  @override
+  Future<void> close() async {
+    // TODO: implement close
+    await _scanSubscription?.cancel();
+    return super.close();
   }
 }

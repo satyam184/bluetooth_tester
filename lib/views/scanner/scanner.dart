@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:lottie/lottie.dart';
 import 'package:nrf/bloc/scanner_bloc/scanner_bloc.dart';
 import 'package:nrf/utils/colors.dart';
 import 'package:nrf/utils/enums.dart';
@@ -19,7 +18,6 @@ class Scanner extends StatelessWidget {
       body: RefreshIndicator(
         color: Colors.white,
         backgroundColor: AppColors.primary,
-        strokeWidth: 4.0,
         onRefresh: () async {
           context.read<ScannerBloc>().add(StartScan());
         },
@@ -30,10 +28,24 @@ class Scanner extends StatelessWidget {
           listener: (context, state) {
             switch (state.scanStatus) {
               case ScanStatus.success:
+                state.devices.isEmpty
+                    ? context.showDefaultSnackbar(
+                      'No device found',
+                      AppColors.error,
+                    )
+                    : context.showDefaultSnackbar(
+                      'Scanned Successfully',
+                      AppColors.sucess,
+                    );
+
+              case ScanStatus.connected:
                 context.showDefaultSnackbar(
-                  'Scanned Successfully',
+                  'Connected Successfully',
                   AppColors.sucess,
                 );
+
+              case ScanStatus.disConnected:
+                context.showDefaultSnackbar('disConnected', AppColors.error);
               case ScanStatus.error:
                 context.showDefaultSnackbar('Failed to scan', AppColors.error);
               default:
@@ -44,13 +56,12 @@ class Scanner extends StatelessWidget {
             switch (state.scanStatus) {
               case ScanStatus.loading:
                 return Center(
-                  child: LottieBuilder.asset(
-                    search,
-                    fit: BoxFit.contain,
-                    height: ScreenUtil.height(10),
-                  ),
+                  child: CircularProgressIndicator(color: AppColors.loading),
                 );
               case ScanStatus.success:
+                if (devices.isEmpty) {
+                  return Center(child: Text('No device found!'));
+                }
                 return ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: devices.length,
@@ -70,13 +81,14 @@ class Scanner extends StatelessWidget {
 }
 
 class CustomBluetoothListTIle extends StatelessWidget {
-  const CustomBluetoothListTIle({super.key, required this.device});
+  const CustomBluetoothListTIle({super.key, this.device});
 
-  final ScanResult device;
+  final ScanResult? device;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      isThreeLine: true,
       leading: SizedBox(
         height: ScreenUtil.height(4),
         width: ScreenUtil.width(7),
@@ -87,22 +99,29 @@ class CustomBluetoothListTIle extends StatelessWidget {
         ),
       ),
       title: Text(
-        device.advertisementData.advName.isNotEmpty
-            ? device.advertisementData.advName
+        device!.advertisementData.advName.isNotEmpty
+            ? device!.advertisementData.advName
             : 'N/A',
         style:
-            device.advertisementData.advName.isNotEmpty
+            device!.advertisementData.advName.isNotEmpty
                 ? TextStyle(color: AppColors.textPrimary)
                 : TextStyle(color: AppColors.textTertiary),
       ),
+
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [Text(device.device.remoteId.toString()), Text('Not Bonded')],
+        children: [
+          Text(device!.device.remoteId.toString()),
+          Text('Not Bonded'),
+        ],
       ),
+
       trailing: ElevatedButton.icon(
         iconAlignment: IconAlignment.end,
         icon: Icon(Icons.more_vert_rounded, color: AppColors.textSecondary),
-        onPressed: () {},
+        onPressed: () {
+          context.read<ScannerBloc>().add(ConnectToDevice(device!.device));
+        },
         label: Text(
           'Connect',
           style: context.titleSmall!.copyWith(color: AppColors.textSecondary),

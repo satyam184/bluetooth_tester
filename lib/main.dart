@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:nrf/bloc/scanner_bloc/scanner_bloc.dart';
 import 'package:nrf/utils/colors.dart';
 import 'package:nrf/utils/size.dart';
 import 'package:nrf/views/dashborad_screen/dashboard.dart';
 
 void main() {
+  // FlutterBluePlus.setLogLevel(LogLevel.verbose);
   runApp(const MyApp());
 }
 

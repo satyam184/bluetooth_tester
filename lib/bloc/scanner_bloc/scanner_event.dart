@@ -8,3 +8,13 @@ abstract class ScannerEvent extends Equatable {
 }
 
 class StartScan extends ScannerEvent {}
+
+class ConnectToDevice extends ScannerEvent {
+  final BluetoothDevice device;
+  const ConnectToDevice(this.device);
+}
+
+class BluetoothStateChanged extends ScannerEvent {
+  final BluetoothDevice state;
+  const BluetoothStateChanged(this.state);
+}
