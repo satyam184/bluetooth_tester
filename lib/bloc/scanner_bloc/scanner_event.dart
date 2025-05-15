@@ -14,6 +14,8 @@ class ConnectToDevice extends ScannerEvent {
   const ConnectToDevice(this.device);
 }
 
+class DisConnectToDevice extends ScannerEvent {}
+
 class BluetoothStateChanged extends ScannerEvent {
   final BluetoothDevice state;
   const BluetoothStateChanged(this.state);

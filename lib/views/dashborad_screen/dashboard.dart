@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nrf/bloc/scanner_bloc/scanner_bloc.dart';
+import 'package:nrf/utils/colors.dart';
 import 'package:nrf/views/advertiser/advertiser.dart';
 import 'package:nrf/views/bonded/bonded.dart';
 import 'package:nrf/views/scanner/scanner.dart';
@@ -46,9 +47,12 @@ class _DashBoardState extends State<DashBoard> with TickerProviderStateMixin {
       length: _tabs.length,
       child: Scaffold(
         appBar: AppBar(
-          iconTheme: IconThemeData(color: Colors.white),
-          backgroundColor: Colors.blue,
-          title: Text('Devices', style: TextStyle(color: Colors.white)),
+          iconTheme: IconThemeData(color: AppColors.textSecondary),
+          backgroundColor: AppColors.primary,
+          title: Text(
+            'Devices',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
           bottom: TabBar(
             controller: _tabController,
             labelColor: Colors.white,

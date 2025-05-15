@@ -8,9 +8,22 @@ import 'package:nrf/utils/enums.dart';
 import 'package:nrf/utils/extension/context_extension.dart';
 import 'package:nrf/utils/image.dart';
 import 'package:nrf/utils/size.dart';
+import 'package:nrf/views/detail_screen/detail_screen.dart';
 
-class Scanner extends StatelessWidget {
+class Scanner extends StatefulWidget {
   const Scanner({super.key});
+
+  @override
+  State<Scanner> createState() => _ScannerState();
+}
+
+class _ScannerState extends State<Scanner> {
+  @override
+  void initState() {
+    // TODO: implement initState
+    // context.read<ScannerBloc>().add(StartScan());
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,18 +50,25 @@ class Scanner extends StatelessWidget {
                       'Scanned Successfully',
                       AppColors.sucess,
                     );
-
               case ScanStatus.connected:
-                context.showDefaultSnackbar(
-                  'Connected Successfully',
-                  AppColors.sucess,
+                Future.delayed(Duration(milliseconds: 500), () {
+                  context.showDefaultSnackbar(
+                    'Connected Successfully',
+                    AppColors.sucess,
+                  );
+                });
+
+                Navigator.push(
+                  (context),
+                  MaterialPageRoute(builder: (context) => DetailScreen()),
                 );
 
               case ScanStatus.disConnected:
-                context.showDefaultSnackbar('disConnected', AppColors.error);
+                context.showDefaultSnackbar('disconnected', AppColors.error);
               case ScanStatus.error:
                 context.showDefaultSnackbar('Failed to scan', AppColors.error);
               default:
+                const SizedBox.shrink();
             }
           },
           builder: (context, state) {
@@ -60,7 +80,7 @@ class Scanner extends StatelessWidget {
                 );
               case ScanStatus.success:
                 if (devices.isEmpty) {
-                  return Center(child: Text('No device found!'));
+                  return const Center(child: Text('No device found!'));
                 }
                 return ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -71,7 +91,7 @@ class Scanner extends StatelessWidget {
                   },
                 );
               default:
-                return SizedBox.shrink();
+                return const SizedBox.shrink();
             }
           },
         ),
@@ -112,7 +132,7 @@ class CustomBluetoothListTIle extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(device!.device.remoteId.toString()),
-          Text('Not Bonded'),
+          const Text('Not Bonded'),
         ],
       ),
 

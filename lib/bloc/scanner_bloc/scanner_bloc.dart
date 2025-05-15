@@ -17,6 +17,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
   ScannerBloc() : super(ScannerState()) {
     on<StartScan>(_onStartScan);
     on<ConnectToDevice>(_onConnectToDevice);
+    on<DisConnectToDevice>(_onDisConnectToDevice);
     on<BluetoothStateChanged>(_bluetoothStateChanged);
   }
 
@@ -120,11 +121,31 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
             add(BluetoothStateChanged(event.device));
           }
         });
-        print('Connected device: ${event.device}');
+        print('Connected device: ${state.connectedDevice!.advName}');
       }
     } catch (e) {
       emit(state.copyWith(scanStatus: ScanStatus.error));
       print('Connection error: $e');
+    }
+  }
+
+  Future<void> _onDisConnectToDevice(
+    DisConnectToDevice event,
+    Emitter<ScannerState> emit,
+  ) async {
+    emit(state.copyWith(scanStatus: ScanStatus.loading));
+    Future.delayed(Duration(milliseconds: 100));
+    if (state.connectedDevice == null) return;
+    if (state.connectedDevice!.isConnected) {
+      await state.connectedDevice!.disconnect();
+      if (state.connectedDevice!.isDisconnected) {
+        emit(
+          state.copyWith(
+            connectedDevice: null,
+            scanStatus: ScanStatus.disConnected,
+          ),
+        );
+      }
     }
   }
 
