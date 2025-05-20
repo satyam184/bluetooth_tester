@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:nrf/service/bluetooth_helper.dart';
@@ -28,7 +29,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
     emit(
       state.copyWith(
         connectedDevice: null,
-        scanStatus: ScanStatus.disConnected,
+        scanStatus: ScanStatus.disconnected,
       ),
     );
     print('device disconnected');
@@ -37,7 +38,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
   Future<void> _onStartScan(StartScan event, Emitter<ScannerState> emit) async {
     final hasPermission = await checkBluetoothPermissions();
     if (!hasPermission) {
-      emit(state.copyWith(scanStatus: ScanStatus.error));
+      emit(state.copyWith(scanStatus: ScanStatus.bluetoothPermissions));
       return;
     }
 
@@ -45,7 +46,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
       emit(state.copyWith(scanStatus: ScanStatus.loading));
       devicesList.clear();
 
-      FlutterBluePlus.startScan(timeout: Duration(seconds: 2));
+      FlutterBluePlus.startScan(timeout: Duration(seconds: 3));
 
       _scanSubscription = FlutterBluePlus.onScanResults.listen((results) async {
         bool newDeviceFound = false;
@@ -100,6 +101,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
           await state.connectedDevice!.disconnect();
           print('Disconnected from previous device');
         } catch (e) {
+          // emit(state.copyWith(scanStatus: ScanStatus.error));
           print('Error disconnecting previous device: $e');
         }
       }
@@ -124,7 +126,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
         print('Connected device: ${state.connectedDevice!.advName}');
       }
     } catch (e) {
-      emit(state.copyWith(scanStatus: ScanStatus.error));
+      emit(state.copyWith(scanStatus: ScanStatus.failed));
       print('Connection error: $e');
     }
   }
@@ -134,7 +136,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
     Emitter<ScannerState> emit,
   ) async {
     emit(state.copyWith(scanStatus: ScanStatus.loading));
-    Future.delayed(Duration(milliseconds: 100));
+    Future.delayed(Duration(seconds: 2));
     if (state.connectedDevice == null) return;
     if (state.connectedDevice!.isConnected) {
       await state.connectedDevice!.disconnect();
@@ -142,7 +144,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
         emit(
           state.copyWith(
             connectedDevice: null,
-            scanStatus: ScanStatus.disConnected,
+            scanStatus: ScanStatus.disconnected,
           ),
         );
       }

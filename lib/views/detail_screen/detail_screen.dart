@@ -4,7 +4,6 @@ import 'package:nrf/bloc/scanner_bloc/scanner_bloc.dart';
 import 'package:nrf/utils/colors.dart';
 import 'package:nrf/utils/enums.dart';
 import 'package:nrf/utils/extension/context_extension.dart';
-import 'package:nrf/views/scanner/scanner.dart';
 
 class DetailScreen extends StatelessWidget {
   const DetailScreen({super.key});
@@ -22,10 +21,10 @@ class DetailScreen extends StatelessWidget {
           ),
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
           onPressed: () {
             context.read<ScannerBloc>().add(DisConnectToDevice());
           },
+          icon: Icon(Icons.arrow_back),
         ),
       ),
       body: BlocConsumer<ScannerBloc, ScannerState>(
@@ -35,15 +34,26 @@ class DetailScreen extends StatelessWidget {
         listener: (context, state) {
           switch (state.scanStatus) {
             case ScanStatus.error:
-              return context.showDefaultSnackbar(
-                'error occured',
-                AppColors.error,
-              );
-            case ScanStatus.disConnected:
-              Navigator.pop(context);
+              context.showDefaultSnackbar('error occured', AppColors.error);
+              break;
+            case ScanStatus.disconnected:
+              Navigator.pop(context, true);
+              break;
+
+            case ScanStatus.connected:
+              Future.delayed(Duration(seconds: 2), () {
+                if (context.mounted) {
+                  context.showDefaultSnackbar(
+                    'Connected Successfully',
+                    AppColors.sucess,
+                  );
+                }
+              });
+
+              break;
 
             default:
-              const SizedBox.shrink();
+              break;
           }
         },
         builder: (context, state) {
@@ -53,22 +63,23 @@ class DetailScreen extends StatelessWidget {
                 child: CircularProgressIndicator(color: AppColors.loading),
               );
 
-            default:
-              SizedBox.shrink();
-          }
+            case ScanStatus.connected:
+              return Column(
+                children: [
+                  Text(
+                    state.connectedDevice!.advName.toString(),
+                    style: context.labelLarge,
+                  ),
+                  Text(
+                    state.connectedDevice!.remoteId.toString(),
+                    style: context.labelLarge,
+                  ),
+                ],
+              );
 
-          return Column(
-            children: [
-              Text(
-                state.connectedDevice!.advName.toString(),
-                style: context.labelLarge,
-              ),
-              Text(
-                state.connectedDevice!.remoteId.toString(),
-                style: context.labelLarge,
-              ),
-            ],
-          );
+            default:
+              return const SizedBox.shrink();
+          }
         },
       ),
     );

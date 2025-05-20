@@ -19,13 +19,6 @@ class Scanner extends StatefulWidget {
 
 class _ScannerState extends State<Scanner> {
   @override
-  void initState() {
-    // TODO: implement initState
-    // context.read<ScannerBloc>().add(StartScan());
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: RefreshIndicator(
@@ -51,24 +44,44 @@ class _ScannerState extends State<Scanner> {
                       AppColors.sucess,
                     );
               case ScanStatus.connected:
-                Future.delayed(Duration(milliseconds: 500), () {
-                  context.showDefaultSnackbar(
-                    'Connected Successfully',
-                    AppColors.sucess,
-                  );
+                Future.microtask(() {
+                  if (context.mounted) {
+                    Navigator.push(
+                      (context),
+                      MaterialPageRoute(builder: (context) => DetailScreen()),
+                    ).then((result) {
+                      if (result == true) {
+                        if (context.mounted) {
+                          context.read<ScannerBloc>().add(StartScan());
+                        }
+                      }
+                    });
+                  }
                 });
 
-                Navigator.push(
-                  (context),
-                  MaterialPageRoute(builder: (context) => DetailScreen()),
-                );
-
-              case ScanStatus.disConnected:
+              case ScanStatus.disconnected:
                 context.showDefaultSnackbar('disconnected', AppColors.error);
+                break;
+
               case ScanStatus.error:
                 context.showDefaultSnackbar('Failed to scan', AppColors.error);
+                break;
+
+              case ScanStatus.failed:
+                context.showDefaultSnackbar(
+                  'Failed to connect',
+                  AppColors.error,
+                );
+                break;
+
+              case ScanStatus.bluetoothPermissions:
+                context.showDefaultSnackbar(
+                  'Permission required',
+                  AppColors.error,
+                );
+                break;
               default:
-                const SizedBox.shrink();
+                break;
             }
           },
           builder: (context, state) {
@@ -78,9 +91,18 @@ class _ScannerState extends State<Scanner> {
                 return Center(
                   child: CircularProgressIndicator(color: AppColors.loading),
                 );
+
               case ScanStatus.success:
                 if (devices.isEmpty) {
-                  return const Center(child: Text('No device found!'));
+                  return ListView(
+                    physics: AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(
+                        height: ScreenUtil.height(5),
+                        child: Center(child: Text('No device found!')),
+                      ),
+                    ],
+                  );
                 }
                 return ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -91,10 +113,25 @@ class _ScannerState extends State<Scanner> {
                   },
                 );
               default:
-                return const SizedBox.shrink();
+                return ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: devices.length,
+                  itemBuilder: (context, index) {
+                    final device = devices[index];
+                    return CustomBluetoothListTIle(device: device);
+                  },
+                );
             }
           },
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          context.read<ScannerBloc>().add(StartScan());
+        },
+        enableFeedback: true,
+        backgroundColor: AppColors.primary,
+        child: Icon(Icons.refresh, color: AppColors.textSecondary),
       ),
     );
   }
@@ -138,7 +175,38 @@ class CustomBluetoothListTIle extends StatelessWidget {
 
       trailing: ElevatedButton.icon(
         iconAlignment: IconAlignment.end,
-        icon: Icon(Icons.more_vert_rounded, color: AppColors.textSecondary),
+        icon: InkWell(
+          onTap: () async {
+            final RenderBox button = context.findRenderObject() as RenderBox;
+            final RenderBox overlay =
+                Overlay.of(context).context.findRenderObject() as RenderBox;
+
+            final Offset position = button.localToGlobal(
+              Offset.zero,
+              ancestor: overlay,
+            );
+
+            final selected = await showMenu<String>(
+              context: context,
+              position: RelativeRect.fromLTRB(
+                position.dx + button.size.width,
+                position.dy + ScreenUtil.height(2),
+                position.dx + button.size.width,
+                position.dy + button.size.height,
+              ),
+              items: [
+                PopupMenuItem(value: 'connect', child: Text('Connect')),
+                PopupMenuItem(value: 'disconnect', child: Text('Disconnect')),
+              ],
+            );
+            if (selected == 'connect') {
+              // handle connect
+            } else if (selected == 'disconnect') {
+              // handle disconnect
+            }
+          },
+          child: Icon(Icons.more_vert_rounded, color: AppColors.textSecondary),
+        ),
         onPressed: () {
           context.read<ScannerBloc>().add(ConnectToDevice(device!.device));
         },

@@ -3,7 +3,7 @@ part of 'scanner_bloc.dart';
 class ScannerState extends Equatable {
   const ScannerState({
     this.devices = const [],
-    this.scanStatus = ScanStatus.inital,
+    this.scanStatus = ScanStatus.initial,
     this.connectedDevice,
   });
 
