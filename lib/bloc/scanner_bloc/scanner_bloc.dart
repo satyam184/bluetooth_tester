@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:nrf/service/bluetooth_helper.dart';
@@ -136,7 +135,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
     Emitter<ScannerState> emit,
   ) async {
     emit(state.copyWith(scanStatus: ScanStatus.loading));
-    Future.delayed(Duration(seconds: 2));
+    await Future.delayed(Duration(seconds: 2));
     if (state.connectedDevice == null) return;
     if (state.connectedDevice!.isConnected) {
       await state.connectedDevice!.disconnect();
