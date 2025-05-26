@@ -21,4 +21,10 @@ enum ScanStatus {
   error,
 
   bluetoothPermissions,
+
+  isScanning,
+
+  isConnecting,
+
+  isDisconnecting,
 }

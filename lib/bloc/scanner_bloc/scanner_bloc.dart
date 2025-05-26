@@ -13,6 +13,8 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
   StreamSubscription? _scanSubscription;
   late StreamSubscription<BluetoothConnectionState> _deviceStateSubscription;
   final List<ScanResult> devicesList = [];
+  var result;
+  var rssi;
 
   ScannerBloc() : super(ScannerState()) {
     on<StartScan>(_onStartScan);
@@ -42,7 +44,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
     }
 
     try {
-      emit(state.copyWith(scanStatus: ScanStatus.loading));
+      emit(state.copyWith(scanStatus: ScanStatus.isScanning));
       devicesList.clear();
 
       FlutterBluePlus.startScan(timeout: Duration(seconds: 3));
@@ -55,6 +57,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
             (d) => d.device.remoteId == r.device.remoteId,
           );
           if (!alreadyExists) {
+            rssi = r.rssi;
             devicesList.add(r);
             newDeviceFound = true;
           }
@@ -65,6 +68,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
             state.copyWith(
               devices: List<ScanResult>.from(devicesList),
               scanStatus: ScanStatus.success,
+              rssi: rssi,
             ),
           );
         }
@@ -94,7 +98,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
   ) async {
     try {
       await FlutterBluePlus.stopScan();
-      emit(state.copyWith(scanStatus: ScanStatus.loading));
+      emit(state.copyWith(scanStatus: ScanStatus.isConnecting));
       if (state.connectedDevice != null && state.connectedDevice!.isConnected) {
         try {
           await state.connectedDevice!.disconnect();
@@ -134,7 +138,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
     DisConnectToDevice event,
     Emitter<ScannerState> emit,
   ) async {
-    emit(state.copyWith(scanStatus: ScanStatus.loading));
+    emit(state.copyWith(scanStatus: ScanStatus.isDisconnecting));
     await Future.delayed(Duration(seconds: 2));
     if (state.connectedDevice == null) return;
     if (state.connectedDevice!.isConnected) {

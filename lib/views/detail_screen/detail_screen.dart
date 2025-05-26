@@ -49,7 +49,6 @@ class DetailScreen extends StatelessWidget {
                   );
                 }
               });
-
               break;
 
             default:
@@ -58,27 +57,49 @@ class DetailScreen extends StatelessWidget {
         },
         builder: (context, state) {
           switch (state.scanStatus) {
-            case ScanStatus.loading:
+            case ScanStatus.isDisconnecting:
               return Center(
-                child: CircularProgressIndicator(color: AppColors.loading),
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(color: AppColors.loading),
+                    Text('Disconnecting'),
+                  ],
+                ),
               );
 
             case ScanStatus.connected:
-              return Column(
-                children: [
-                  Text(
-                    state.connectedDevice!.advName.toString(),
-                    style: context.labelLarge,
-                  ),
-                  Text(
-                    state.connectedDevice!.remoteId.toString(),
-                    style: context.labelLarge,
-                  ),
-                ],
+              return Card(
+                elevation: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Device Name: ${(state.connectedDevice?.advName.isNotEmpty ?? false) ? state.connectedDevice!.advName : 'N/A'}',
+                      style: context.displaySmall,
+                    ),
+                    Divider(),
+                    Text(
+                      'Remote ID: ${state.connectedDevice?.remoteId ?? 'N/A'}',
+                      style: context.labelLarge,
+                    ),
+                    Divider(),
+
+                    Text(
+                      'Connection Status: ${state.connectedDevice?.isConnected == true ? 'Connected' : 'Error'}',
+                      style: context.labelLarge,
+                    ),
+                    Divider(),
+
+                    Text(
+                      'RSSI: ${state.rssi ?? 'Unknown'} dbm',
+                      style: context.labelLarge,
+                    ),
+                  ],
+                ),
               );
 
             default:
-              return const SizedBox.shrink();
+              return Text('Retry connecting');
           }
         },
       ),

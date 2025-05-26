@@ -87,9 +87,25 @@ class _ScannerState extends State<Scanner> {
           builder: (context, state) {
             final devices = state.devices;
             switch (state.scanStatus) {
-              case ScanStatus.loading:
+              case ScanStatus.isConnecting:
                 return Center(
-                  child: CircularProgressIndicator(color: AppColors.loading),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(color: AppColors.loading),
+                      Text('Connecting'),
+                    ],
+                  ),
+                );
+              case ScanStatus.isScanning:
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(color: AppColors.loading),
+                      Text('Scanning'),
+                    ],
+                  ),
                 );
 
               case ScanStatus.success:
